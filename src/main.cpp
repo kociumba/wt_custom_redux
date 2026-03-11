@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 
     float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
     GLFWwindow* window = glfwCreateWindow(
-        (int)(1280 * main_scale), (int)(800 * main_scale), "WT custom", nullptr, nullptr);
+        (int)(1280 * main_scale), (int)(800 * main_scale), "WT custom [redux]", nullptr, nullptr);
     if (window == nullptr) return 1;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
@@ -104,12 +104,18 @@ int main(int argc, char* argv[]) {
 
         ImGui::DockSpaceOverViewport(main_id);
 
-        auto pos = ImGui::GetCursorPos();
-
         csv_editor_draw(state, io.DeltaTime);
 
         if (ImGui::IsKeyPressed(ImGuiKey_F3)) { show_debug = !show_debug; }
-        if (show_debug) { debug_overlay(pos); }
+        if (show_debug) {
+            int w, h;
+            glfwGetWindowSize(window, &w, &h);
+            measure_overlay m{};
+            debug_overlay({0, 0}, m);
+
+            draw_overlay d{};
+            debug_overlay({10, h - m.size().y}, d);
+        }
 
         ImGui::Render();
         int display_w, display_h;
