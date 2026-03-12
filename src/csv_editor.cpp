@@ -15,6 +15,7 @@
 #include <cstring>
 #include <fstream>
 
+#include "globals.h"
 #include "strings.h"
 #include "thirdparty/progress.hpp"
 
@@ -146,7 +147,7 @@ void draw_toolbar(state_t& s) {
         }
     };
 
-    if (flex_button("Open", 1., false, s.is_loading)) {
+    if (flex_button("Open", 1.)) {
         const char* filters[] = {"*.csv", "*.txt"};
         const char* picked = tinyfd_openFileDialog("Open CSV", "", 2, filters, "CSV files", 0);
 
@@ -157,6 +158,8 @@ void draw_toolbar(state_t& s) {
             s.picked_path = picked;
         }
     }
+
+    ImGui::SetItemTooltip("you can also drag and drop files to open them");
 
     if (s.is_loading && s.csv_load_res.valid()) {
         if (s.csv_load_res.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
@@ -425,7 +428,23 @@ void draw_status_bar(state_t& s, float dt) {
     ImGui::End();
 }
 
+static void handle_dropped_file(state_t& s) {
+    if (!dropped) return;
+    dropped = false;
+
+    if (dropped_payload.empty()) return;
+
+    s.is_loading = true;
+    s.csv_load_res =
+        std::async(std::launch::async, [path = dropped_payload] { return load_csv(path.c_str()); });
+    s.picked_path = dropped_payload;
+
+    dropped_payload.clear();
+}
+
 void csv_editor_draw(state_t& s, float dt) {
+    handle_dropped_file(s);
+
     draw_toolbar(s);
     draw_table(s);
     draw_status_bar(s, dt);

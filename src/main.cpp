@@ -4,10 +4,13 @@
 #undef GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <filesystem>
 #include <print>
+#include <vector>
 
 #include "csv_editor.hpp"
 #include "debug.hpp"
+#include "globals.h"
 #include "theme.h"
 #include "thirdparty/dock.hpp"
 
@@ -19,6 +22,8 @@ extern const uint8_t _binary_Roboto_Regular_ttf_end[];
 state_t state;
 bool resized = false;
 bool show_debug = false;
+std::string dropped_payload;
+bool dropped = false;
 
 static void glfw_error_cb(int error, const char* description) {
     std::println("GLFW Error {}: {}", error, description);
@@ -44,6 +49,28 @@ int main(int argc, char* argv[]) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     glfwSetFramebufferSizeCallback(window, glfw_resize_cb);
+
+    glfwSetDropCallback(window, [](GLFWwindow* window, int count, const char** paths) {
+        if (count > 1) {
+            std::println("only one file supported at once");
+            return;
+        }
+
+        std::filesystem::path dropped_path(paths[0]);
+
+        if (std::filesystem::is_directory(dropped_path)) {
+            std::println("directories not supported");
+            return;
+        }
+
+        if (!std::filesystem::is_regular_file(dropped_path)) {
+            std::println("not a valid file");
+            return;
+        }
+
+        dropped_payload = dropped_path.string();
+        dropped = true;
+    });
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
